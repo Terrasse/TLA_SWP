@@ -1,15 +1,19 @@
 ------------------------------ MODULE SlidingWindowProtocol ------------------------------
 EXTENDS Integers, Naturals
       
-CONSTANT l, n
+CONSTANT l, n, N, IN1
 
-VARIABLES IN1,
-          OUT,
+VARIABLES OUT,
           i,
           ack,
           got,
           b
-          
+
+DOM_IN == 0..n
+DOM_OUT == 0..n
+DOM_B == 0..n
+MyNat == 0..N
+   
 vars == <<IN1,OUT, i, ack, got, b>>
 
 -----------------------------------------------------------------
@@ -24,14 +28,14 @@ SEND(j) == /\ j \in i..i+1
            /\ j \notin got
            /\ j - i > 0 
            /\ j - i < l
-           /\ b(j-i) = IN1(j)
+           /\ b[j-i]' = IN1[j]
            /\ UNCHANGED <<i, ack, got, OUT>>
            
 -----------------------------------------------------------------
 RECEIVE(j) == /\ j \in i..i+1
-              /\ j - i \in dom(b)
+              /\ j - i \in DOM_B
               /\ ack = ack \union {j}
-              /\ OUT(j) = b(j-i)
+              /\ OUT'=[OUT EXCEPT![j]=b[j-i]]  \* /\ OUT(j)' = b(j-i)
               /\ UNCHANGED <<i, ack, got, b>>
 
 -----------------------------------------------------------------
@@ -74,7 +78,7 @@ COMPLETION == /\ i = n+1
 LOOSINGCHAN(j) == /\ j > i
               /\ j < i + 1
               /\ j \notin got
-              /\ j-i \in dom(b)
+              /\ j-i \in DOM_IN
               /\ b' = {j - i} \* ca veut dire quoi?
               /\ UNCHANGED <<i,OUT, got, ack>>  
               
@@ -83,19 +87,22 @@ LOOSINGACK(k) == /\ k \in ack
               /\ ack' = ack \ k
               /\ UNCHANGED <<i,OUT, got, b>> 
 
+Next == \/ \E j \in DOM_IN: SEND(j)
+        \/ \E j \in DOM_IN: RECEIVE(j)
+        \/ \E j \in DOM_IN: RECEIVEACK(k)
                           
 inv1 == OUT \subseteq IN1
 \* inv2 == que veut dire la fleche ?
 inv3 == i > 0 /\ i < n + 1
 inv4 == ack \union got \subseteq (i .. i+l) \intersect 0 .. n
-inv5 == ack \subseteq dom(OUT)
-inv6 == OUT \in Naturals \* ??
+inv5 == ack \subseteq DOM_OUT
+inv6 == OUT \in MyNat \* ??
 inv7 == i \in 0..n+1
-inv8 == 0..i-1 \subseteq dom(OUT) /\ dom(OUT) \subseteq 0..n
-inv9 == ack \subseteq Naturals
-inv10 == got \subseteq Naturals
-inv11 == got \subseteq dom(OUT)
-inv12 == ack \subseteq dom(OUT)
+inv8 == 0..i-1 \subseteq DOM_OUT /\ DOM_OUT \subseteq 0..n
+inv9 == ack \subseteq MyNat
+inv10 == got \subseteq MyNat
+inv11 == got \subseteq DOM_OUT
+inv12 == ack \subseteq DOM_OUT
 \* inv13 même question que inv2
 
 
