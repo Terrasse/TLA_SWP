@@ -7,11 +7,11 @@ VARIABLES OUT,
           i,
           ack,
           got,
-          b
+          b \* fenetre deux cursor -- buffer
 
-DOM_IN == 0..n
+DOM_IN == 0..n \* création tableau de 0 à n -- i et j pas depends represente les indices du tableau in
 DOM_OUT == 0..n
-DOM_B == 0..n
+DOM_B == 0..n  
 MyNat == 0..N
    
 vars == <<IN1,OUT, i, ack, got, b>>
@@ -24,18 +24,20 @@ INITIALISATION == /\ OUT = {}
                   /\ b = {}
                   
 -----------------------------------------------------------------
-SEND(j) == /\ j \in i..i+1
+SEND(j) == /\ j \in i..i+l
+           \*/\ j - i > 0 
+           \*/\ j - i < l
+           /\ j \leq n 
            /\ j \notin got
-           /\ j - i > 0 
-           /\ j - i < l
-           /\ b[j-i]' = IN1[j]
+           /\ j-i \in 0..l      
+           /\ b'=[b EXCEPT! [b-j]=IN1[j]] \* /\ b[j-i]' = IN1[j]
            /\ UNCHANGED <<i, ack, got, OUT>>
            
 -----------------------------------------------------------------
-RECEIVE(j) == /\ j \in i..i+1
+RECEIVE(j) == /\ j \in i..i+l
               /\ j - i \in DOM_B
-              /\ ack = ack \union {j}
-              /\ OUT'=[OUT EXCEPT![j]=b[j-i]]  \* /\ OUT(j)' = b(j-i)
+              /\ ack' = ack \union {j}
+              /\ OUT'=[OUT EXCEPT![j]=b[j-i]]  \* /\ OUT(j)' = b(j-i) \* pour modifir la valeur 
               /\ UNCHANGED <<i, ack, got, b>>
 
 -----------------------------------------------------------------
@@ -49,7 +51,6 @@ RECEIVEACK(k) == /\ k \in ack
 SLIDING(c) == /\ got # {}
               /\ i \in got
               /\ i + l < n
-              \*
               /\ i' = i + 1
               /\ got' = got \ {i}
               /\ ack' = ack \ {i}
@@ -86,10 +87,11 @@ LOOSINGCHAN(j) == /\ j > i
 LOOSINGACK(k) == /\ k \in ack
               /\ ack' = ack \ k
               /\ UNCHANGED <<i,OUT, got, b>> 
-
+-----------------------------------------------------------------
 Next == \/ \E j \in DOM_IN: SEND(j)
         \/ \E j \in DOM_IN: RECEIVE(j)
         \/ \E j \in DOM_IN: RECEIVEACK(k)
+-----------------------------------------------------------------
                           
 inv1 == OUT \subseteq IN1
 \* inv2 == que veut dire la fleche ?
